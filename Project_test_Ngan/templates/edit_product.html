@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sửa sản phẩm</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Hiệu ứng cho input và textarea */
+        input, textarea {
+            transition: all 0.3s ease;
+            border-color: #f97316; /* Màu cam mặc định */
+        }
+        input:focus, textarea:focus {
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+            outline: none;
+        }
+        /* Khi đã điền, đổi màu viền thành xanh lá */
+        input.filled, textarea.filled {
+            border-color: #22c55e; /* Màu xanh lá khi đã điền */
+        }
+        /* Hiệu ứng cho khung form */
+        .form-container {
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.5s forwards;
+        }
+        .form-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(45deg, #f97316, #ffedd5) border-box;
+        }
+        /* Hiệu ứng fade-in */
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* Hiệu ứng cho ảnh hiện tại */
+        .current-image {
+            transition: all 0.3s ease;
+        }
+        .current-image:hover {
+            transform: scale(1.05);
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(45deg, #f97316, #ffedd5) border-box;
+        }
+        /* Hiệu ứng cho nút */
+        .btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn-cancel:hover {
+            background-color: #4b5563;
+        }
+        .btn-save:hover {
+            background-color: #ea580c;
+        }
+        /* Ripple effect khi nhấn nút */
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        /* Loading spinner trong nút */
+        .btn-loading .btn-text {
+            visibility: hidden;
+        }
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        /* Loading spinner toàn màn hình */
+        #loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #f97316;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Loading Spinner -->
+    <div id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-orange-500 text-orange-100 p-4 sticky top-0 z-10 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Sửa sản phẩm</h1>
+            <a href="{{ url_for('index') }}" class="bg-white text-orange-500 px-4 py-2 rounded hover:bg-gray-100 transition-all">Quay lại</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto mt-8 max-w-lg">
+        <form method="POST" enctype="multipart/form-data" class="bg-white p-8 rounded-xl form-container" onsubmit="showLoading()">
+            <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">Tên sản phẩm</label>
+                <input type="text" name="name" value="{{ product[1] }}" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500" required>
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">Giá (VND)</label>
+                <input type="number" name="price" value="{{ product[2] }}" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500" required>
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">Ảnh hiện tại</label>
+                <img src="{{ url_for('static', filename=product[3]) }}" alt="{{ product[1] }}" class="w-32 h-32 object-cover mb-2 rounded-lg border border-gray-300 current-image">
+                <input type="hidden" name="current_image" value="{{ product[3] }}">
+                <label class="block text-gray-700 font-medium mb-2">Chọn ảnh mới (nếu muốn thay đổi)</label>
+                <input type="file" name="image" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500" accept="image/*">
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">Mô tả</label>
+                <textarea name="description" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500" rows="5">{{ product[4] }}</textarea>
+            </div>
+            <div class="flex justify-end space-x-4">
+                <a href="{{ url_for('index') }}" class="btn btn-cancel bg-gray-500 text-white px-6 py-3 rounded-lg" onclick="addRipple(event)">Hủy</a>
+                <button type="submit" class="btn btn-save bg-orange-500 text-white px-6 py-3 rounded-lg"><span class="btn-text">Lưu</span></button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Hiển thị loading spinner khi submit form
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+            const submitBtn = document.querySelector('.btn-save');
+            submitBtn.classList.add('btn-loading');
+        }
+
+        // Hiệu ứng ripple khi nhấn nút
+        function addRipple(event) {
+            const btn = event.currentTarget;
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            
+            const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+            const radius = diameter / 2;
+            
+            ripple.style.width = ripple.style.height = `${diameter}px`;
+            ripple.style.left = `${event.clientX - btn.offsetLeft - radius}px`;
+            ripple.style.top = `${event.clientY - btn.offsetTop - radius}px`;
+            
+            btn.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        }
+
+        // Cập nhật màu viền dựa trên trạng thái điền thông tin
+        function updateBorderColor() {
+            const inputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
+            inputs.forEach(input => {
+                if (input.value.trim() !== '') {
+                    input.classList.add('filled'); // Đổi màu viền thành xanh lá nếu có nội dung
+                } else {
+                    input.classList.remove('filled'); // Quay lại màu cam nếu không có nội dung
+                }
+            });
+
+            const fileInput = document.querySelector('input[type="file"]');
+            if (fileInput.files.length > 0) {
+                fileInput.classList.add('filled');
+            } else {
+                fileInput.classList.remove('filled');
+            }
+        }
+
+        // Gắn sự kiện input để kiểm tra trạng thái điền
+        document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
+            input.addEventListener('input', updateBorderColor);
+        });
+
+        // Gắn sự kiện change cho input file
+        document.querySelector('input[type="file"]').addEventListener('change', updateBorderColor);
+
+        // Gắn sự kiện ripple cho nút "Lưu"
+        document.querySelector('.btn-save').addEventListener('click', addRipple);
+
+        // Kiểm tra trạng thái ban đầu khi tải trang
+        window.onload = function() {
+            updateBorderColor();
+        };
+    </script>
+</body>
+</html>
